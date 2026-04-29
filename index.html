@@ -543,7 +543,7 @@ const LS_CATS = 'et_cats';
 const LS_BUDGET = 'et_budget';
 const LS_ALERTED = 'et_alerted'; // {user: {month: {80: bool, 100: bool}}}
 
-function getUsers() { return JSON.parse(localStorage.getItem(LS_USERS) ?? '[]'); }
+function getUsers() { try { const v = localStorage.getItem(LS_USERS); if (!v || v === 'null' || v === 'undefined') return []; const arr = JSON.parse(v); return Array.isArray(arr) ? arr : []; } catch { return []; } }
 function setUsers(u) { localStorage.setItem(LS_USERS, JSON.stringify(u)); }
 function getLastUser() { return localStorage.getItem(LS_LAST) || ''; }
 function setLastUser(u) { localStorage.setItem(LS_LAST, u); }
