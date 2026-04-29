@@ -683,13 +683,17 @@ function showAuth() {
   document.querySelectorAll('.error').forEach(e=>e.textContent='');
 }
 function showApp() {
-  document.getElementById('page-auth').classList.remove('active');
-  document.getElementById('app-main').style.display = 'flex';
-  document.getElementById('tab-bar').classList.add('show');
-  resetAlertIfNewMonth(currentUser);
-  navigateTo('home');
-  refreshHome();
-  loadSettings();
+  try {
+    document.getElementById('page-auth').classList.remove('active');
+    document.getElementById('app-main').style.display = 'flex';
+    document.getElementById('tab-bar').classList.add('show');
+    resetAlertIfNewMonth(currentUser);
+    navigateTo('home');
+    refreshHome();
+    loadSettings();
+  } catch(err) {
+    showToast('页面加载异常，请刷新重试');
+  }
 }
 document.querySelectorAll('.auth-tab').forEach(t => {
   t.addEventListener('click', () => {
@@ -700,37 +704,42 @@ document.querySelectorAll('.auth-tab').forEach(t => {
 });
 document.getElementById('form-auth').addEventListener('submit', e => {
   e.preventDefault();
-  const phone = document.getElementById('auth-phone').value.trim();
-  const pwd = document.getElementById('auth-pwd').value;
-  const isReg = document.querySelector('.auth-tab.active').dataset.tab === 'register';
-  document.querySelectorAll('.error').forEach(e=>e.textContent='');
-  let ok = true;
-  if (!/^1\d{10}$/.test(phone)) {
-    document.getElementById('auth-phone-err').textContent='请输入11位手机号'; ok=false;
-  }
-  if (pwd.length < 6) {
-    document.getElementById('auth-pwd-err').textContent='密码至少6位'; ok=false;
-  }
-  if (!ok) return;
-  const users = getUsers();
-  if (isReg) {
-    if (users.find(u=>u.phone===phone)) {
-      document.getElementById('auth-phone-err').textContent='该手机号已注册'; return;
+  try {
+    const phone = document.getElementById('auth-phone').value.trim();
+    const pwd = document.getElementById('auth-pwd').value;
+    const activeTab = document.querySelector('.auth-tab.active');
+    const isReg = activeTab && activeTab.dataset.tab === 'register';
+    document.querySelectorAll('.error').forEach(e=>e.textContent='');
+    let ok = true;
+    if (!/^1\d{10}$/.test(phone)) {
+      document.getElementById('auth-phone-err').textContent='请输入11位手机号'; ok=false;
     }
-    users.push({phone, password:pwd, created:new Date().toISOString()});
-    setUsers(users);
-    currentUser = phone;
-    setLastUser(phone);
-    showToast('注册成功！');
-    showApp();
-  } else {
-    const u = users.find(u=>u.phone===phone && u.password===pwd);
-    if (!u) {
-      document.getElementById('auth-pwd-err').textContent='手机号或密码错误'; return;
+    if (pwd.length < 6) {
+      document.getElementById('auth-pwd-err').textContent='密码至少6位'; ok=false;
     }
-    currentUser = phone;
-    setLastUser(phone);
-    showApp();
+    if (!ok) return;
+    const users = getUsers() || [];
+    if (isReg) {
+      if (users.find(u=>u.phone===phone)) {
+        document.getElementById('auth-phone-err').textContent='该手机号已注册'; return;
+      }
+      users.push({phone, password:pwd, created:new Date().toISOString()});
+      setUsers(users);
+      currentUser = phone;
+      setLastUser(phone);
+      showToast('注册成功！');
+      showApp();
+    } else {
+      const u = users.find(u=>u.phone===phone && u.password===pwd);
+      if (!u) {
+        document.getElementById('auth-pwd-err').textContent='手机号或密码错误'; return;
+      }
+      currentUser = phone;
+      setLastUser(phone);
+      showApp();
+    }
+  } catch(err) {
+    showToast('操作异常，请重试');
   }
 });
 
@@ -767,7 +776,7 @@ function refreshHome() {
   document.getElementById('home-income').textContent = fmtAbs(income);
   document.getElementById('home-expense').textContent = fmtAbs(expense);
   // budget bar
-  const b = getBudget(currentUser);
+  const b = getBudget(currentUser) || {amount: 0, alert80: true, alert100: true};
   if (b.amount > 0) {
     document.getElementById('home-budget-wrap').style.display = '';
     const pct = Math.min(100, Math.round((expense/b.amount)*100));
@@ -992,37 +1001,41 @@ document.querySelectorAll('.type-btn').forEach(btn=>{
 });
 document.getElementById('form-record').addEventListener('submit', e=>{
   e.preventDefault();
-  const amount = parseFloat(document.getElementById('rec-amount').value);
-  if (!amount || amount <= 0) { showToast('请输入有效金额'); return; }
-  const cat = selectedCatCustom || selectedCat;
-  if (!cat) { showToast('请选择分类'); return; }
-  const date = document.getElementById('rec-date').value;
-  if (!date) { showToast('请选择日期'); return; }
-  const cats = getCats(currentUser);
-  const catInfo = cats.find(c=>c.name===cat);
-  const isCustom = !!(getCustomCats(currentUser).find(c=>c.name===cat));
-  const rec = {
-    id: editRecordId || uuid(),
-    type: currentCatType,
-    amount,
-    category: cat,
-    categoryEmoji: catInfo ? catInfo.emoji : '📌',
-    isCustom,
-    note: document.getElementById('rec-note').value.trim(),
-    date,
-    user: currentUser,
-    created: editRecordId ? (getAllRecords().find(r=>r.id===editRecordId)?.created||new Date().toISOString()) : new Date().toISOString()
-  };
-  saveRecord(rec);
-  // budget check
-  if (currentCatType === 'expense') {
-    const monthRecs = getRecords(currentUser).filter(r=>r.date.startsWith(ym()));
-    const total = monthRecs.filter(r=>r.type==='expense').reduce((s,r)=>s+r.amount,0);
-    checkBudgetAlert(currentUser, total);
+  try {
+    const amount = parseFloat(document.getElementById('rec-amount').value);
+    if (!amount || amount <= 0) { showToast('请输入有效金额'); return; }
+    const cat = selectedCatCustom || selectedCat;
+    if (!cat) { showToast('请选择分类'); return; }
+    const date = document.getElementById('rec-date').value;
+    if (!date) { showToast('请选择日期'); return; }
+    const cats = getCats(currentUser);
+    const catInfo = cats.find(c=>c.name===cat);
+    const isCustom = !!(getCustomCats(currentUser).find(c=>c.name===cat));
+    const rec = {
+      id: editRecordId || uuid(),
+      type: currentCatType,
+      amount,
+      category: cat,
+      categoryEmoji: catInfo ? catInfo.emoji : '📌',
+      isCustom,
+      note: document.getElementById('rec-note').value.trim(),
+      date,
+      user: currentUser,
+      created: editRecordId ? (getAllRecords().find(r=>r.id===editRecordId)?.created||new Date().toISOString()) : new Date().toISOString()
+    };
+    saveRecord(rec);
+    // budget check
+    if (currentCatType === 'expense') {
+      const monthRecs = getRecords(currentUser).filter(r=>r.date.startsWith(ym()));
+      const total = monthRecs.filter(r=>r.type==='expense').reduce((s,r)=>s+r.amount,0);
+      checkBudgetAlert(currentUser, total);
+    }
+    showToast(editRecordId ? '已更新' : '已保存');
+    navigateTo('bills');
+    setTimeout(refreshBills, 50);
+  } catch(err) {
+    showToast('保存失败，请重试');
   }
-  showToast(editRecordId ? '已更新' : '已保存');
-  navigateTo('bills');
-  setTimeout(refreshBills, 50);
 });
 document.getElementById('rec-delete-btn').addEventListener('click', ()=>{
   showModal('确认删除','确定要删除这条记录吗？',()=>{
