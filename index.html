@@ -543,55 +543,55 @@ const LS_CATS = 'et_cats';
 const LS_BUDGET = 'et_budget';
 const LS_ALERTED = 'et_alerted'; // {user: {month: {80: bool, 100: bool}}}
 
-function getUsers() { return JSON.parse(localStorage.getItem(LS_USERS) || '[]'); }
+function getUsers() { return JSON.parse(localStorage.getItem(LS_USERS) ?? '[]'); }
 function setUsers(u) { localStorage.setItem(LS_USERS, JSON.stringify(u)); }
 function getLastUser() { return localStorage.getItem(LS_LAST) || ''; }
 function setLastUser(u) { localStorage.setItem(LS_LAST, u); }
 function getRecords(user) {
-  const all = JSON.parse(localStorage.getItem(LS_RECORDS) || '[]');
+  const all = JSON.parse(localStorage.getItem(LS_RECORDS) ?? '[]');
   return all.filter(r => r.user === user);
 }
-function getAllRecords() { return JSON.parse(localStorage.getItem(LS_RECORDS) || '[]'); }
+function getAllRecords() { return JSON.parse(localStorage.getItem(LS_RECORDS) ?? '[]'); }
 function saveRecord(rec) {
-  const all = JSON.parse(localStorage.getItem(LS_RECORDS) || '[]');
+  const all = JSON.parse(localStorage.getItem(LS_RECORDS) ?? '[]');
   const idx = all.findIndex(r => r.id === rec.id);
   if (idx >= 0) all[idx] = rec; else all.push(rec);
   localStorage.setItem(LS_RECORDS, JSON.stringify(all));
 }
 function deleteRecord(id) {
-  const all = JSON.parse(localStorage.getItem(LS_RECORDS) || '[]');
+  const all = JSON.parse(localStorage.getItem(LS_RECORDS) ?? '[]');
   localStorage.setItem(LS_RECORDS, JSON.stringify(all.filter(r => r.id !== id)));
 }
 function getCats(user) {
-  const custom = JSON.parse(localStorage.getItem(LS_CATS) || '[]').filter(c => c.user === user);
+  const custom = JSON.parse(localStorage.getItem(LS_CATS) ?? '[]').filter(c => c.user === user);
   const expense = PRESET_EXPENSE.map(p => ({...p, type:'expense', isCustom:false, id:'preset_exp_'+p.name, user}));
   const income = PRESET_INCOME.map(p => ({...p, type:'income', isCustom:false, id:'preset_inc_'+p.name, user}));
   return [...expense, ...income, ...custom];
 }
-function getCustomCats(user) { return JSON.parse(localStorage.getItem(LS_CATS) || '[]').filter(c => c.user === user); }
+function getCustomCats(user) { return JSON.parse(localStorage.getItem(LS_CATS) ?? '[]').filter(c => c.user === user); }
 function saveCat(cat) {
-  const all = JSON.parse(localStorage.getItem(LS_CATS) || '[]');
+  const all = JSON.parse(localStorage.getItem(LS_CATS) ?? '[]');
   const idx = all.findIndex(c => c.id === cat.id);
   if (idx >= 0) all[idx] = cat; else all.push(cat);
   localStorage.setItem(LS_CATS, JSON.stringify(all));
 }
 function deleteCat(id) {
-  const all = JSON.parse(localStorage.getItem(LS_CATS) || '[]');
+  const all = JSON.parse(localStorage.getItem(LS_CATS) ?? '[]');
   localStorage.setItem(LS_CATS, JSON.stringify(all.filter(c => c.id !== id)));
 }
 function getBudget(user) {
-  const all = JSON.parse(localStorage.getItem(LS_BUDGET) || '[]');
+  const all = JSON.parse(localStorage.getItem(LS_BUDGET) ?? '[]');
   return all.find(b => b.user === user) || {user, amount:0, alert80:true, alert100:true};
 }
 function saveBudget(b) {
-  const all = JSON.parse(localStorage.getItem(LS_BUDGET) || '[]');
+  const all = JSON.parse(localStorage.getItem(LS_BUDGET) ?? '[]');
   const idx = all.findIndex(x => x.user === b.user);
   if (idx >= 0) all[idx] = b; else all.push(b);
   localStorage.setItem(LS_BUDGET, JSON.stringify(all));
 }
-function getAlerted(user) { return JSON.parse(localStorage.getItem(LS_ALERTED) || '{}'); }
+function getAlerted(user) { return JSON.parse(localStorage.getItem(LS_ALERTED) ?? '{}'); }
 function setAlerted(user, month, pct, val) {
-  const all = JSON.parse(localStorage.getItem(LS_ALERTED) || '{}');
+  const all = JSON.parse(localStorage.getItem(LS_ALERTED) ?? '{}');
   if (!all[user]) all[user] = {};
   if (!all[user][month]) all[user][month] = {80:false, 100:false};
   all[user][month][pct] = val;
@@ -616,7 +616,7 @@ function checkBudgetAlert(user, expenseTotal) {
 function resetAlertIfNewMonth(user) {
   const now = new Date();
   const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const all = JSON.parse(localStorage.getItem(LS_ALERTED) || '{}');
+  const all = JSON.parse(localStorage.getItem(LS_ALERTED) ?? '{}');
   if (all[user] && !all[user][month]) {
     all[user][month] = {80:false, 100:false};
     localStorage.setItem(LS_ALERTED, JSON.stringify(all));
