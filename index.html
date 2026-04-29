@@ -667,11 +667,10 @@ let currentCatType = 'expense';
 // ===== Auth =====
 function initAuth() {
   const last = getLastUser();
-  const users = getUsers();
-  if (last && users.find(u=>u.phone===last)) {
-    currentUser = last;
-    showApp();
-    return;
+  const users = getUsers() || [];
+  if (last && users.find) {
+    const u = users.find(x => x.phone === last);
+    if (u) { currentUser = last; showApp(); return; }
   }
   showAuth();
 }
