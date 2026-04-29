@@ -691,7 +691,10 @@ function showApp() {
     refreshHome();
     loadSettings();
   } catch(err) {
-    showToast('页面加载异常，请刷新重试');
+    console.error('showApp error:', err);
+    document.getElementById('page-auth').style.display='none';
+    document.getElementById('app-main').style.display='flex';
+    document.getElementById('tab-bar').classList.add('show');
   }
 }
 document.querySelectorAll('.auth-tab').forEach(t => {
