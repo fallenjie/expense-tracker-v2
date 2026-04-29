@@ -543,7 +543,18 @@ const LS_CATS = 'et_cats';
 const LS_BUDGET = 'et_budget';
 const LS_ALERTED = 'et_alerted'; // {user: {month: {80: bool, 100: bool}}}
 
-function getUsers() { try { const v = localStorage.getItem(LS_USERS); if (!v || v === 'null' || v === 'undefined') return []; const arr = JSON.parse(v); return Array.isArray(arr) ? arr : []; } catch { return []; } }
+function getUsers() {
+  try {
+    const raw = localStorage.getItem(LS_USERS);
+    if (!raw) return [];
+    if (raw === 'null' || raw === 'undefined') return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch(e) {
+    return [];
+  }
+}
 function setUsers(u) { localStorage.setItem(LS_USERS, JSON.stringify(u)); }
 function getLastUser() { return localStorage.getItem(LS_LAST) || ''; }
 function setLastUser(u) { localStorage.setItem(LS_LAST, u); }
@@ -667,8 +678,8 @@ let currentCatType = 'expense';
 // ===== Auth =====
 function initAuth() {
   const last = getLastUser();
-  const users = getUsers() || [];
-  if (last && users.find) {
+  const users = getUsers();
+  if (last && users && users.length > 0) {
     const u = users.find(x => x.phone === last);
     if (u) { currentUser = last; showApp(); return; }
   }
@@ -690,6 +701,7 @@ function showApp() {
     navigateTo('home');
     refreshHome();
     loadSettings();
+    document.getElementById('page-auth').style.display='none';
   } catch(err) {
     console.error('showApp error:', err);
     document.getElementById('page-auth').style.display='none';
@@ -720,7 +732,7 @@ document.getElementById('form-auth').addEventListener('submit', e => {
       document.getElementById('auth-pwd-err').textContent='密码至少6位'; ok=false;
     }
     if (!ok) return;
-    const users = getUsers() || [];
+    const users = getUsers();
     if (isReg) {
       if (users.find(u=>u.phone===phone)) {
         document.getElementById('auth-phone-err').textContent='该手机号已注册'; return;
