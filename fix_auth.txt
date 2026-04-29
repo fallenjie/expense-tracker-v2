@@ -1,0 +1,270 @@
+彻底重写 D:\ai-dev-git\expense-tracker-v2\index.html 中的 auth 和 storage 相关函数。
+
+**目标：用最保守、最防御的方式重写，确保永远不会崩溃。**
+
+**具体要求：**
+
+1. 先读取 D:\ai-dev-git\expense-tracker-v2\index.html 的完整内容，了解所有函数
+
+2. Storage 函数全部重写为防御性格式（所有函数都有 try-catch，永远不抛错）：
+
+```javascript
+function getUsers() {
+  try {
+    var v = localStorage.getItem('et_users');
+    if (!v) return [];
+    var parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
+}
+function setUsers(arr) { try { localStorage.setItem('et_users', JSON.stringify(arr || [])); } catch(e) {} }
+function getLastUser() { try { return localStorage.getItem('et_lastUser') || ''; } catch(e) { return ''; } }
+function setLastUser(u) { try { localStorage.setItem('et_lastUser', u || ''); } catch(e) {} }
+
+function getAllRecords() {
+  try {
+    var v = localStorage.getItem('et_records');
+    if (!v) return [];
+    var parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
+}
+function setAllRecords(arr) { try { localStorage.setItem('et_records', JSON.stringify(arr || [])); } catch(e) {} }
+function getRecords(user) { try { return getAllRecords().filter(function(r) { return r.user === user; }); } catch(e) { return []; } }
+function saveRecord(rec) {
+  try {
+    if (!rec || !rec.id) return;
+    var all = getAllRecords();
+    var idx = -1;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === rec.id) { idx = i; break; } }
+    if (idx >= 0) all[idx] = rec; else all.push(rec);
+    setAllRecords(all);
+  } catch(e) { showToast('保存失败'); }
+}
+function deleteRecord(id) { try { setAllRecords(getAllRecords().filter(function(r) { return r.id !== id; })); } catch(e) {} }
+
+function getAllCats() {
+  try {
+    var v = localStorage.getItem('et_cats');
+    if (!v) return [];
+    var parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
+}
+function setAllCats(arr) { try { localStorage.setItem('et_cats', JSON.stringify(arr || [])); } catch(e) {} }
+function getCats(user) {
+  try {
+    var custom = getAllCats().filter(function(c) { return c.user === user; });
+    var expense = PRESET_EXPENSE.map(function(p) { return {...p, type:'expense', isCustom:false, id:'preset_exp_'+p.name, user:user}; });
+    var income = PRESET_INCOME.map(function(p) { return {...p, type:'income', isCustom:false, id:'preset_inc_'+p.name, user:user}; });
+    return [...expense, ...income, ...custom];
+  } catch(e) { return []; }
+}
+function getCustomCats(user) { try { return getAllCats().filter(function(c) { return c.user === user; }); } catch(e) { return []; } }
+function saveCat(cat) {
+  try {
+    var all = getAllCats();
+    var idx = -1;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === cat.id) { idx = i; break; } }
+    if (idx >= 0) all[idx] = cat; else all.push(cat);
+    setAllCats(all);
+  } catch(e) {}
+}
+function deleteCat(id) { try { setAllCats(getAllCats().filter(function(c) { return c.id !== id; })); } catch(e) {} }
+
+function getAllBudgets() {
+  try {
+    var v = localStorage.getItem('et_budget');
+    if (!v) return [];
+    var parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
+}
+function setAllBudgets(arr) { try { localStorage.setItem('et_budget', JSON.stringify(arr || [])); } catch(e) {} }
+function getBudget(user) {
+  try {
+    var budgets = getAllBudgets();
+    for (var i = 0; i < budgets.length; i++) { if (budgets[i].user === user) return budgets[i]; }
+    return {user:user, amount:0, alert80:true, alert100:true};
+  } catch(e) { return {user:user, amount:0, alert80:true, alert100:true}; }
+}
+function saveBudget(b) {
+  try {
+    var all = getAllBudgets();
+    var idx = -1;
+    for (var i = 0; i < all.length; i++) { if (all[i].user === b.user) { idx = i; break; } }
+    if (idx >= 0) all[idx] = b; else all.push(b);
+    setAllBudgets(all);
+  } catch(e) {}
+}
+
+function getAllAlerted() {
+  try {
+    var v = localStorage.getItem('et_alerted');
+    if (!v) return {};
+    var parsed = JSON.parse(v);
+    return (typeof parsed === 'object' && parsed !== null) ? parsed : {};
+  } catch(e) { return {}; }
+}
+function setAllAlerted(obj) { try { localStorage.setItem('et_alerted', JSON.stringify(obj || {})); } catch(e) {} }
+```
+
+3. initAuth 重写：
+```javascript
+function initAuth() {
+  try {
+    var last = getLastUser();
+    var users = getUsers();
+    if (last && users.length > 0) {
+      for (var i = 0; i < users.length; i++) {
+        if (users[i].phone === last) {
+          window.currentUser = last;
+          showApp();
+          return;
+        }
+      }
+    }
+  } catch(e) {}
+  showAuth();
+}
+```
+
+4. showApp 重写：
+```javascript
+function showApp() {
+  try {
+    var authPage = document.getElementById('page-auth');
+    var appMain = document.getElementById('app-main');
+    var tabBar = document.getElementById('tab-bar');
+    if (authPage) { authPage.classList.remove('active'); authPage.style.display = 'none'; }
+    if (appMain) appMain.style.display = 'flex';
+    if (tabBar) tabBar.classList.add('show');
+    resetAlertIfNewMonth(window.currentUser);
+    navigateTo('home');
+    refreshHome();
+    loadSettings();
+  } catch(e) {
+    console.error('showApp error:', e);
+    // fallback: force show anyway
+    if (authPage) authPage.style.display = 'none';
+    if (appMain) appMain.style.display = 'flex';
+    if (tabBar) tabBar.classList.add('show');
+  }
+}
+```
+
+5. form submit 重写（用 for 循环替代 .find/.some，兼容性更好）：
+```javascript
+document.getElementById('form-auth').addEventListener('submit', function(e) {
+  e.preventDefault();
+  try {
+    var phone = document.getElementById('auth-phone').value.trim();
+    var pwd = document.getElementById('auth-pwd').value;
+    var activeTab = document.querySelector('.auth-tab.active');
+    var isReg = activeTab && activeTab.dataset.tab === 'register';
+    document.querySelectorAll('.error').forEach(function(el) { el.textContent = ''; });
+    if (!/^1\d{10}$/.test(phone)) {
+      document.getElementById('auth-phone-err').textContent = '请输入11位手机号';
+      return;
+    }
+    if (pwd.length < 6) {
+      document.getElementById('auth-pwd-err').textContent = '密码至少6位';
+      return;
+    }
+    var users = getUsers();
+    if (isReg) {
+      var exists = false;
+      for (var i = 0; i < users.length; i++) { if (users[i].phone === phone) { exists = true; break; } }
+      if (exists) {
+        document.getElementById('auth-phone-err').textContent = '该手机号已注册';
+        return;
+      }
+      users.push({phone:phone, password:pwd, created:new Date().toISOString()});
+      setUsers(users);
+      window.currentUser = phone;
+      setLastUser(phone);
+      showToast('注册成功！');
+      showApp();
+    } else {
+      var found = null;
+      for (var i = 0; i < users.length; i++) {
+        if (users[i].phone === phone && users[i].password === pwd) { found = users[i]; break; }
+      }
+      if (!found) {
+        document.getElementById('auth-pwd-err').textContent = '手机号或密码错误';
+        return;
+      }
+      window.currentUser = phone;
+      setLastUser(phone);
+      showApp();
+    }
+  } catch(err) {
+    showToast('操作异常，请重试');
+    console.error('auth submit error:', err);
+  }
+});
+```
+
+6. refreshHome 重写（用 for 循环替代箭头函数）：
+```javascript
+function refreshHome() {
+  try {
+    var records = getRecords(window.currentUser);
+    var now = new Date();
+    var curYM = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    var monthRecs = [];
+    for (var i = 0; i < records.length; i++) {
+      if (records[i].date && records[i].date.indexOf(curYM) === 0) monthRecs.push(records[i]);
+    }
+    var income = 0, expense = 0;
+    for (var i = 0; i < monthRecs.length; i++) {
+      if (monthRecs[i].type === 'income') income += monthRecs[i].amount || 0;
+      else if (monthRecs[i].type === 'expense') expense += monthRecs[i].amount || 0;
+    }
+    var balance = income - expense;
+    var balEl = document.getElementById('home-balance');
+    if (balEl) { balEl.textContent = fmt(balance); balEl.className = balance < 0 ? 'negative' : ''; }
+    var incEl = document.getElementById('home-income');
+    if (incEl) incEl.textContent = fmt(income);
+    var expEl = document.getElementById('home-expense');
+    if (expEl) expEl.textContent = fmt(expense);
+    var b = getBudget(window.currentUser);
+    if (b && b.amount > 0) {
+      var pct = Math.min(100, Math.round((expense / b.amount) * 100));
+      var wrap = document.getElementById('home-budget-wrap');
+      if (wrap) wrap.style.display = '';
+      var textEl = document.getElementById('home-budget-text');
+      if (textEl) textEl.textContent = pct + '%';
+      var fill = document.getElementById('home-budget-fill');
+      if (fill) { fill.style.width = pct + '%'; fill.className = 'bb-fill' + (pct >= 100 ? ' danger' : pct >= 80 ? ' warning' : ''); }
+    } else {
+      var wrap2 = document.getElementById('home-budget-wrap');
+      if (wrap2) wrap2.style.display = 'none';
+    }
+    // recent list
+    var recent = records.slice().sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); });
+    var listEl = document.getElementById('home-list');
+    if (listEl) {
+      listEl.innerHTML = '';
+      for (var i = 0; i < Math.min(5, recent.length); i++) {
+        var r = recent[i];
+        var div = document.createElement('div');
+        div.className = 'record-item';
+        div.innerHTML = '<span>' + (r.categoryEmoji||'') + ' ' + (r.category||'') + '</span><span class="' + (r.type==='income'?'income-text':'expense-text') + '">' + (r.type==='income'?'+':'-') + fmt(r.amount||0) + '</span>';
+        listEl.appendChild(div);
+      }
+      if (recent.length === 0) listEl.innerHTML = '<div style="text-align:center;color:#999;padding:20px">暂无记录</div>';
+    }
+  } catch(e) { console.error('refreshHome error:', e); }
+}
+```
+
+7. **重要：把 let currentUser = '' 改成 window.currentUser = ''，确保全局可访问**
+
+**执行步骤：**
+1. 读取 D:\ai-dev-git\expense-tracker-v2\index.html
+2. 找到并替换上述所有函数
+3. 保留所有 HTML/CSS/其他 JS 不变
+4. 输出到 D:\ai-dev-git\expense-tracker-v2\index.html
+
+只替换函数实现，HTML 结构和 CSS 样式、其他所有函数都要保留不变。

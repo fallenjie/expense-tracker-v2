@@ -1,0 +1,39 @@
+修复饼图问题 - 同时显示收入和支出两个饼图
+
+步骤1：修改HTML，在 rd-pie 容器后添加收入饼图容器：
+找到：<div class="report-pie" id="rd-pie"></div>
+替换为：
+<div class="pie-row" style="display:flex;gap:8px;padding:0 16px;align-items:flex-start">
+  <div style="flex:1">
+    <div style="text-align:center;font-size:11px;color:var(--text2);margin-bottom:4px">支出</div>
+    <div class="report-pie" id="rd-pie"></div>
+  </div>
+  <div style="flex:1">
+    <div style="text-align:center;font-size:11px;color:var(--text2);margin-bottom:4px">收入</div>
+    <div class="report-pie" id="rd-pie-income"></div>
+  </div>
+</div>
+
+步骤2：在 rm-pie 容器后添加收入饼图容器：
+找到：<div class="report-pie" id="rm-pie"></div>
+替换为：
+<div class="pie-row" style="display:flex;gap:8px;padding:0 16px;align-items:flex-start;margin-top:8px">
+  <div style="flex:1">
+    <div style="text-align:center;font-size:11px;color:var(--text2);margin-bottom:4px">支出</div>
+    <div class="report-pie" id="rm-pie"></div>
+  </div>
+  <div style="flex:1">
+    <div style="text-align:center;font-size:11px;color:var(--text2);margin-bottom:4px">收入</div>
+    <div class="report-pie" id="rm-pie-income"></div>
+  </div>
+</div>
+
+步骤3：修改 refreshReportDay 函数，在 drawPie('rd-pie', records, 'expense'); 后面添加：
+drawPie('rd-pie-income', records.filter(function(r){return r.type==='income';}), 'income');
+
+步骤4：修改 refreshReportMonth 函数，在 drawPie('rm-pie', records, 'expense'); 后面添加：
+drawPie('rm-pie-income', records.filter(function(r){return r.type==='income';}), 'income');
+
+步骤5：修改 rd-pie 的 click toggle 事件，让它也能切换收入饼图。
+
+只修改这5个地方，保留其他所有代码不变。输出到 D:\ai-dev-git\expense-tracker-v2\index.html。
