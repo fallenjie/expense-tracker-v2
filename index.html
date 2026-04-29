@@ -536,102 +536,143 @@ const PRESET_INCOME = [
 ];
 
 // ===== Storage =====
-const LS_USERS = 'et_users';
-const LS_LAST = 'et_lastUser';
-const LS_RECORDS = 'et_records';
-const LS_CATS = 'et_cats';
-const LS_BUDGET = 'et_budget';
-const LS_ALERTED = 'et_alerted'; // {user: {month: {80: bool, 100: bool}}}
-
 function getUsers() {
   try {
-    const raw = localStorage.getItem(LS_USERS);
-    if (!raw) return [];
-    if (raw === 'null' || raw === 'undefined') return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed;
-  } catch(e) {
-    return [];
-  }
+    var v = localStorage.getItem('et_users');
+    if (!v) return [];
+    var parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
 }
-function setUsers(u) { localStorage.setItem(LS_USERS, JSON.stringify(u)); }
-function getLastUser() { return localStorage.getItem(LS_LAST) || ''; }
-function setLastUser(u) { localStorage.setItem(LS_LAST, u); }
-function getRecords(user) {
-  const all = JSON.parse(localStorage.getItem(LS_RECORDS) ?? '[]');
-  return all.filter(r => r.user === user);
+function setUsers(arr) { try { localStorage.setItem('et_users', JSON.stringify(arr || [])); } catch(e) {} }
+function getLastUser() { try { return localStorage.getItem('et_lastUser') || ''; } catch(e) { return ''; } }
+function setLastUser(u) { try { localStorage.setItem('et_lastUser', u || ''); } catch(e) {} }
+
+function getAllRecords() {
+  try {
+    var v = localStorage.getItem('et_records');
+    if (!v) return [];
+    var parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
 }
-function getAllRecords() { return JSON.parse(localStorage.getItem(LS_RECORDS) ?? '[]'); }
+function setAllRecords(arr) { try { localStorage.setItem('et_records', JSON.stringify(arr || [])); } catch(e) {} }
+function getRecords(user) { try { return getAllRecords().filter(function(r) { return r.user === user; }); } catch(e) { return []; } }
 function saveRecord(rec) {
-  const all = JSON.parse(localStorage.getItem(LS_RECORDS) ?? '[]');
-  const idx = all.findIndex(r => r.id === rec.id);
-  if (idx >= 0) all[idx] = rec; else all.push(rec);
-  localStorage.setItem(LS_RECORDS, JSON.stringify(all));
+  try {
+    if (!rec || !rec.id) return;
+    var all = getAllRecords();
+    var idx = -1;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === rec.id) { idx = i; break; } }
+    if (idx >= 0) all[idx] = rec; else all.push(rec);
+    setAllRecords(all);
+  } catch(e) { showToast('保存失败'); }
 }
-function deleteRecord(id) {
-  const all = JSON.parse(localStorage.getItem(LS_RECORDS) ?? '[]');
-  localStorage.setItem(LS_RECORDS, JSON.stringify(all.filter(r => r.id !== id)));
+function deleteRecord(id) { try { setAllRecords(getAllRecords().filter(function(r) { return r.id !== id; })); } catch(e) {} }
+
+function getAllCats() {
+  try {
+    var v = localStorage.getItem('et_cats');
+    if (!v) return [];
+    var parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
 }
+function setAllCats(arr) { try { localStorage.setItem('et_cats', JSON.stringify(arr || [])); } catch(e) {} }
 function getCats(user) {
-  const custom = JSON.parse(localStorage.getItem(LS_CATS) ?? '[]').filter(c => c.user === user);
-  const expense = PRESET_EXPENSE.map(p => ({...p, type:'expense', isCustom:false, id:'preset_exp_'+p.name, user}));
-  const income = PRESET_INCOME.map(p => ({...p, type:'income', isCustom:false, id:'preset_inc_'+p.name, user}));
-  return [...expense, ...income, ...custom];
+  try {
+    var custom = getAllCats().filter(function(c) { return c.user === user; });
+    var expense = PRESET_EXPENSE.map(function(p) { return {...p, type:'expense', isCustom:false, id:'preset_exp_'+p.name, user:user}; });
+    var income = PRESET_INCOME.map(function(p) { return {...p, type:'income', isCustom:false, id:'preset_inc_'+p.name, user:user}; });
+    return [...expense, ...income, ...custom];
+  } catch(e) { return []; }
 }
-function getCustomCats(user) { return JSON.parse(localStorage.getItem(LS_CATS) ?? '[]').filter(c => c.user === user); }
+function getCustomCats(user) { try { return getAllCats().filter(function(c) { return c.user === user; }); } catch(e) { return []; } }
 function saveCat(cat) {
-  const all = JSON.parse(localStorage.getItem(LS_CATS) ?? '[]');
-  const idx = all.findIndex(c => c.id === cat.id);
-  if (idx >= 0) all[idx] = cat; else all.push(cat);
-  localStorage.setItem(LS_CATS, JSON.stringify(all));
+  try {
+    var all = getAllCats();
+    var idx = -1;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === cat.id) { idx = i; break; } }
+    if (idx >= 0) all[idx] = cat; else all.push(cat);
+    setAllCats(all);
+  } catch(e) {}
 }
-function deleteCat(id) {
-  const all = JSON.parse(localStorage.getItem(LS_CATS) ?? '[]');
-  localStorage.setItem(LS_CATS, JSON.stringify(all.filter(c => c.id !== id)));
+function deleteCat(id) { try { setAllCats(getAllCats().filter(function(c) { return c.id !== id; })); } catch(e) {} }
+
+function getAllBudgets() {
+  try {
+    var v = localStorage.getItem('et_budget');
+    if (!v) return [];
+    var parsed = JSON.parse(v);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch(e) { return []; }
 }
+function setAllBudgets(arr) { try { localStorage.setItem('et_budget', JSON.stringify(arr || [])); } catch(e) {} }
 function getBudget(user) {
-  const all = JSON.parse(localStorage.getItem(LS_BUDGET) ?? '[]');
-  return all.find(b => b.user === user) || {user, amount:0, alert80:true, alert100:true};
+  try {
+    var budgets = getAllBudgets();
+    for (var i = 0; i < budgets.length; i++) { if (budgets[i].user === user) return budgets[i]; }
+    return {user:user, amount:0, alert80:true, alert100:true};
+  } catch(e) { return {user:user, amount:0, alert80:true, alert100:true}; }
 }
 function saveBudget(b) {
-  const all = JSON.parse(localStorage.getItem(LS_BUDGET) ?? '[]');
-  const idx = all.findIndex(x => x.user === b.user);
-  if (idx >= 0) all[idx] = b; else all.push(b);
-  localStorage.setItem(LS_BUDGET, JSON.stringify(all));
+  try {
+    var all = getAllBudgets();
+    var idx = -1;
+    for (var i = 0; i < all.length; i++) { if (all[i].user === b.user) { idx = i; break; } }
+    if (idx >= 0) all[idx] = b; else all.push(b);
+    setAllBudgets(all);
+  } catch(e) {}
 }
-function getAlerted(user) { return JSON.parse(localStorage.getItem(LS_ALERTED) ?? '{}'); }
+
+function getAllAlerted() {
+  try {
+    var v = localStorage.getItem('et_alerted');
+    if (!v) return {};
+    var parsed = JSON.parse(v);
+    return (typeof parsed === 'object' && parsed !== null) ? parsed : {};
+  } catch(e) { return {}; }
+}
+function setAllAlerted(obj) { try { localStorage.setItem('et_alerted', JSON.stringify(obj || {})); } catch(e) {} }
+function getAlerted(user) { return getAllAlerted()[user] || {}; }
 function setAlerted(user, month, pct, val) {
-  const all = JSON.parse(localStorage.getItem(LS_ALERTED) ?? '{}');
-  if (!all[user]) all[user] = {};
-  if (!all[user][month]) all[user][month] = {80:false, 100:false};
-  all[user][month][pct] = val;
-  localStorage.setItem(LS_ALERTED, JSON.stringify(all));
+  try {
+    var all = getAllAlerted();
+    if (!all[user]) all[user] = {};
+    if (!all[user][month]) all[user][month] = {80:false, 100:false};
+    all[user][month][pct] = val;
+    setAllAlerted(all);
+  } catch(e) {}
 }
 function checkBudgetAlert(user, expenseTotal) {
-  const b = getBudget(user);
-  if (!b.amount || b.amount <= 0) return;
-  const now = new Date();
-  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const pct = Math.round((expenseTotal / b.amount) * 100);
-  const alerted = getAlerted(user)[user]?.[month] || {};
-  if (pct >= 80 && b.alert80 && !alerted[80]) {
-    setAlerted(user, month, 80, true);
-    showToast(`⚠️ 提醒：本月支出已达预算的 80% (${pct}%)`, 'warning');
-  }
-  if (pct >= 100 && b.alert100 && !alerted[100]) {
-    setAlerted(user, month, 100, true);
-    showToast(`🚨 警告：本月支出已超出预算！ (${pct}%)`, 'danger');
-  }
+  try {
+    var b = getBudget(user);
+    if (!b || !b.amount || b.amount <= 0) return;
+    var now = new Date();
+    var month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    var pct = Math.round((expenseTotal / b.amount) * 100);
+    var alerted = getAlerted(user) || {};
+    var monthData = alerted[month] || {};
+    if (pct >= 80 && b.alert80 && !monthData[80]) {
+      setAlerted(user, month, 80, true);
+      showToast('⚠️ 提醒：本月支出已达预算的 80% (' + pct + '%)', 'warning');
+    }
+    if (pct >= 100 && b.alert100 && !monthData[100]) {
+      setAlerted(user, month, 100, true);
+      showToast('🚨 警告：本月支出已超出预算！ (' + pct + '%)', 'danger');
+    }
+  } catch(e) {}
 }
 function resetAlertIfNewMonth(user) {
-  const now = new Date();
-  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const all = JSON.parse(localStorage.getItem(LS_ALERTED) ?? '{}');
-  if (all[user] && !all[user][month]) {
-    all[user][month] = {80:false, 100:false};
-    localStorage.setItem(LS_ALERTED, JSON.stringify(all));
-  }
+  try {
+    var now = new Date();
+    var month = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    var all = getAllAlerted();
+    if (all[user] && !all[user][month]) {
+      all[user][month] = {80:false, 100:false};
+      setAllAlerted(all);
+    }
+  } catch(e) {}
 }
 
 // ===== Utils =====
@@ -665,7 +706,7 @@ const showModal = (title, body, onConfirm, danger=false) => {
 const closeModal = () => document.getElementById('modal-overlay').classList.remove('show');
 
 // ===== State =====
-let currentUser = '';
+window.currentUser = '';
 let currentPage = 'home';
 let billsMonth = ym();
 let reportMonth = ym();
@@ -677,12 +718,19 @@ let currentCatType = 'expense';
 
 // ===== Auth =====
 function initAuth() {
-  const last = getLastUser();
-  const users = getUsers();
-  if (last && users && users.length > 0) {
-    const u = users.find(x => x.phone === last);
-    if (u) { currentUser = last; showApp(); return; }
-  }
+  try {
+    var last = getLastUser();
+    var users = getUsers();
+    if (last && users.length > 0) {
+      for (var i = 0; i < users.length; i++) {
+        if (users[i].phone === last) {
+          window.currentUser = last;
+          showApp();
+          return;
+        }
+      }
+    }
+  } catch(e) {}
   showAuth();
 }
 function showAuth() {
@@ -694,19 +742,25 @@ function showAuth() {
 }
 function showApp() {
   try {
-    document.getElementById('page-auth').classList.remove('active');
-    document.getElementById('app-main').style.display = 'flex';
-    document.getElementById('tab-bar').classList.add('show');
-    resetAlertIfNewMonth(currentUser);
+    var authPage = document.getElementById('page-auth');
+    var appMain = document.getElementById('app-main');
+    var tabBar = document.getElementById('tab-bar');
+    if (authPage) { authPage.classList.remove('active'); authPage.style.display = 'none'; }
+    if (appMain) appMain.style.display = 'flex';
+    if (tabBar) tabBar.classList.add('show');
+    resetAlertIfNewMonth(window.currentUser);
     navigateTo('home');
     refreshHome();
     loadSettings();
-    document.getElementById('page-auth').style.display='none';
-  } catch(err) {
-    console.error('showApp error:', err);
-    document.getElementById('page-auth').style.display='none';
-    document.getElementById('app-main').style.display='flex';
-    document.getElementById('tab-bar').classList.add('show');
+  } catch(e) {
+    console.error('showApp error:', e);
+    // fallback: force show anyway
+    var authPage2 = document.getElementById('page-auth');
+    var appMain2 = document.getElementById('app-main');
+    var tabBar2 = document.getElementById('tab-bar');
+    if (authPage2) authPage2.style.display = 'none';
+    if (appMain2) appMain2.style.display = 'flex';
+    if (tabBar2) tabBar2.classList.add('show');
   }
 }
 document.querySelectorAll('.auth-tab').forEach(t => {
@@ -716,44 +770,52 @@ document.querySelectorAll('.auth-tab').forEach(t => {
     document.getElementById('auth-submit-btn').textContent = t.dataset.tab === 'register' ? '注册' : '登录';
   });
 });
-document.getElementById('form-auth').addEventListener('submit', e => {
+document.getElementById('form-auth').addEventListener('submit', function(e) {
   e.preventDefault();
   try {
-    const phone = document.getElementById('auth-phone').value.trim();
-    const pwd = document.getElementById('auth-pwd').value;
-    const activeTab = document.querySelector('.auth-tab.active');
-    const isReg = activeTab && activeTab.dataset.tab === 'register';
-    document.querySelectorAll('.error').forEach(e=>e.textContent='');
-    let ok = true;
+    var phone = document.getElementById('auth-phone').value.trim();
+    var pwd = document.getElementById('auth-pwd').value;
+    var activeTab = document.querySelector('.auth-tab.active');
+    var isReg = activeTab && activeTab.dataset.tab === 'register';
+    document.querySelectorAll('.error').forEach(function(el) { el.textContent = ''; });
     if (!/^1\d{10}$/.test(phone)) {
-      document.getElementById('auth-phone-err').textContent='请输入11位手机号'; ok=false;
+      document.getElementById('auth-phone-err').textContent = '请输入11位手机号';
+      return;
     }
     if (pwd.length < 6) {
-      document.getElementById('auth-pwd-err').textContent='密码至少6位'; ok=false;
+      document.getElementById('auth-pwd-err').textContent = '密码至少6位';
+      return;
     }
-    if (!ok) return;
-    const users = getUsers();
+    var users = getUsers();
     if (isReg) {
-      if (users.find(u=>u.phone===phone)) {
-        document.getElementById('auth-phone-err').textContent='该手机号已注册'; return;
+      var exists = false;
+      for (var i = 0; i < users.length; i++) { if (users[i].phone === phone) { exists = true; break; } }
+      if (exists) {
+        document.getElementById('auth-phone-err').textContent = '该手机号已注册';
+        return;
       }
-      users.push({phone, password:pwd, created:new Date().toISOString()});
+      users.push({phone:phone, password:pwd, created:new Date().toISOString()});
       setUsers(users);
-      currentUser = phone;
+      window.currentUser = phone;
       setLastUser(phone);
       showToast('注册成功！');
       showApp();
     } else {
-      const u = users.find(u=>u.phone===phone && u.password===pwd);
-      if (!u) {
-        document.getElementById('auth-pwd-err').textContent='手机号或密码错误'; return;
+      var found = null;
+      for (var i = 0; i < users.length; i++) {
+        if (users[i].phone === phone && users[i].password === pwd) { found = users[i]; break; }
       }
-      currentUser = phone;
+      if (!found) {
+        document.getElementById('auth-pwd-err').textContent = '手机号或密码错误';
+        return;
+      }
+      window.currentUser = phone;
       setLastUser(phone);
       showApp();
     }
   } catch(err) {
     showToast('操作异常，请重试');
+    console.error('auth submit error:', err);
   }
 });
 
@@ -777,61 +839,54 @@ document.querySelectorAll('.tab-item').forEach(t => {
 
 // ===== Home =====
 function refreshHome() {
-  const records = getRecords(currentUser);
-  const now = new Date();
-  const curYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const monthRecs = records.filter(r => r.date.startsWith(curYM));
-  const income = monthRecs.filter(r=>r.type==='income').reduce((s,r)=>s+r.amount,0);
-  const expense = monthRecs.filter(r=>r.type==='expense').reduce((s,r)=>s+r.amount,0);
-  const balance = income - expense;
-  const balEl = document.getElementById('home-balance');
-  balEl.textContent = fmtAbs(Math.abs(balance));
-  balEl.classList.toggle('negative', balance < 0);
-  document.getElementById('home-income').textContent = fmtAbs(income);
-  document.getElementById('home-expense').textContent = fmtAbs(expense);
-  // budget bar
-  const b = getBudget(currentUser) || {amount: 0, alert80: true, alert100: true};
-  if (b.amount > 0) {
-    document.getElementById('home-budget-wrap').style.display = '';
-    const pct = Math.min(100, Math.round((expense/b.amount)*100));
-    document.getElementById('home-budget-text').textContent = pct+'%';
-    const f = document.getElementById('home-budget-fill');
-    f.style.width = pct+'%';
-    f.className = 'bb-fill' + (pct>=100?' danger': pct>=80?' warning':'');
-  } else {
-    document.getElementById('home-budget-wrap').style.display = 'none';
-  }
-  // recent
-  const recent = records.sort((a,b)=>b.date+a.created > a.date+a.created ? 1:-1).slice(0,5);
-  const listEl = document.getElementById('recent-list');
-  const emptyEl = document.getElementById('recent-empty');
-  if (!recent.length) {
-    listEl.style.display = 'none';
-    emptyEl.style.display = '';
-    return;
-  }
-  listEl.style.display = '';
-  emptyEl.style.display = 'none';
-  listEl.innerHTML = recent.map(r => `
-    <div class="recent-item" data-id="${r.id}">
-      <div class="emoji">${r.categoryEmoji}</div>
-      <div class="info">
-        <div class="catename">${r.category}</div>
-        <div class="note">${r.note||'—'}</div>
-      </div>
-      <div class="amount-right">
-        <div class="amount-val ${r.type}">${r.type==='income'?'+':'-'}${r.amount.toFixed(2)}</div>
-        <div class="amount-time">${r.date}</div>
-      </div>
-    </div>
-  `).join('');
-  listEl.querySelectorAll('.recent-item').forEach(el => {
-    el.addEventListener('click', () => {
-      editRecordId = el.dataset.id;
-      openEditRecord();
-    });
-  });
-  document.getElementById('home-refresh').addEventListener('click', refreshHome);
+  try {
+    var records = getRecords(window.currentUser);
+    var now = new Date();
+    var curYM = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+    var monthRecs = [];
+    for (var i = 0; i < records.length; i++) {
+      if (records[i].date && records[i].date.indexOf(curYM) === 0) monthRecs.push(records[i]);
+    }
+    var income = 0, expense = 0;
+    for (var i = 0; i < monthRecs.length; i++) {
+      if (monthRecs[i].type === 'income') income += monthRecs[i].amount || 0;
+      else if (monthRecs[i].type === 'expense') expense += monthRecs[i].amount || 0;
+    }
+    var balance = income - expense;
+    var balEl = document.getElementById('home-balance');
+    if (balEl) { balEl.textContent = fmt(balance); balEl.className = balance < 0 ? 'negative' : ''; }
+    var incEl = document.getElementById('home-income');
+    if (incEl) incEl.textContent = fmt(income);
+    var expEl = document.getElementById('home-expense');
+    if (expEl) expEl.textContent = fmt(expense);
+    var b = getBudget(window.currentUser);
+    if (b && b.amount > 0) {
+      var pct = Math.min(100, Math.round((expense / b.amount) * 100));
+      var wrap = document.getElementById('home-budget-wrap');
+      if (wrap) wrap.style.display = '';
+      var textEl = document.getElementById('home-budget-text');
+      if (textEl) textEl.textContent = pct + '%';
+      var fill = document.getElementById('home-budget-fill');
+      if (fill) { fill.style.width = pct + '%'; fill.className = 'bb-fill' + (pct >= 100 ? ' danger' : pct >= 80 ? ' warning' : ''); }
+    } else {
+      var wrap2 = document.getElementById('home-budget-wrap');
+      if (wrap2) wrap2.style.display = 'none';
+    }
+    // recent list
+    var recent = records.slice().sort(function(a,b) { return (b.date||'').localeCompare(a.date||''); });
+    var listEl = document.getElementById('recent-list');
+    if (listEl) {
+      listEl.innerHTML = '';
+      for (var i = 0; i < Math.min(5, recent.length); i++) {
+        var r = recent[i];
+        var div = document.createElement('div');
+        div.className = 'recent-item';
+        div.innerHTML = '<span>' + (r.categoryEmoji||'') + ' ' + (r.category||'') + '</span><span class="amount-val ' + (r.type==='income'?'income':'expense') + '">' + (r.type==='income'?'+':'-') + fmt(r.amount||0) + '</span>';
+        listEl.appendChild(div);
+      }
+      if (recent.length === 0) listEl.innerHTML = '<div style="text-align:center;color:#999;padding:20px">暂无记录</div>';
+    }
+  } catch(e) { console.error('refreshHome error:', e); }
 }
 
 // ===== Bills =====
