@@ -388,7 +388,16 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft 
           <div class="report-stat"><div class="rs-val expense" id="rd-expense">¥0</div><div class="rs-label">支出</div></div>
           <div class="report-stat"><div class="rs-val" id="rd-balance">¥0</div><div class="rs-label">结余</div></div>
         </div>
-        <div class="report-pie" id="rd-pie"></div>
+        <div style="display:flex;gap:8px;padding:0 16px;align-items:flex-start">
+          <div style="flex:1;text-align:center">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px">支出</div>
+            <div class="report-pie" id="rd-pie"></div>
+          </div>
+          <div style="flex:1;text-align:center">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px">收入</div>
+            <div class="report-pie" id="rd-pie-income"></div>
+          </div>
+        </div>
       </div>
       <div id="report-month" style="display:none">
         <div class="report-month-nav">
@@ -405,7 +414,16 @@ html,body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft 
           <div class="bb-top"><span>预算进度</span><span id="rm-budget-text">0%</span></div>
           <div class="bb-bottom"><div class="bb-fill" id="rm-budget-fill" style="width:0%"></div></div>
         </div>
-        <div class="report-pie" id="rm-pie"></div>
+        <div style="display:flex;gap:8px;padding:0 16px;align-items:flex-start;margin-top:8px">
+          <div style="flex:1;text-align:center">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px">支出</div>
+            <div class="report-pie" id="rm-pie"></div>
+          </div>
+          <div style="flex:1;text-align:center">
+            <div style="font-size:11px;color:var(--text2);margin-bottom:4px">收入</div>
+            <div class="report-pie" id="rm-pie-income"></div>
+          </div>
+        </div>
         <div class="home-section-title" style="padding-left:16px">收支记录</div>
         <div class="report-records" id="rm-records"></div>
         <div class="empty-state" id="rm-records-empty" style="display:none">该月暂无记录</div>
@@ -1182,6 +1200,7 @@ function refreshReportDay() {
   balEl.textContent = fmt(balance);
   balEl.style.color = balance >= 0 ? 'var(--primary)' : 'var(--danger)';
   drawPie('rd-pie', records, 'expense');
+  drawPie('rd-pie-income', records.filter(function(r){return r.type==='income';}), 'income');
 }
 document.getElementById('rd-pie').addEventListener('click', ()=>{
   // simple: just toggle income/expense
@@ -1209,6 +1228,7 @@ function refreshReportMonth() {
     rmBudgetBar.style.display = 'none';
   }
   drawPie('rm-pie', records, 'expense');
+  drawPie('rm-pie-income', records.filter(function(r){return r.type==='income';}), 'income');
   // records list
   const sorted = [...records].sort((a,b)=>(b.date+a.created)>(a.date+a.created)?1:-1);
   const recEl = document.getElementById('rm-records');
